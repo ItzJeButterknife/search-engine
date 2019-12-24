@@ -1,0 +1,184 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#define MAXLINKS 10
+
+
+typedef struct page {
+    char *url;
+    int visited;
+    struct page *links[MAXLINKS];
+    struct page *next;
+} page;
+
+page *add_page(page *web, char *url) {
+    page *curr = web;
+    page *prev = NULL;
+    page *new_page = (page*) malloc(sizeof(page));
+    
+    if(web == NULL) {
+        
+        new_page->url = (char*) malloc(20);
+        strcpy(new_page->url,url);
+        new_page->next = NULL;
+        
+        new_page->visited = -1;
+        for (int i = 0; i < MAXLINKS; i++) {
+            new_page->links[i] = NULL;
+        }
+    }
+    else {
+        while(curr != NULL) {
+            if (strcmp(curr->url,url) == 0) {
+                printf("URL \"%s\" is already on the web\n", url);
+                free(new_page);
+                return web;
+            }
+            else if(strcmp(url,curr->url) > 0) {
+                if(curr->next == NULL) {
+                    new_page->url = (char*) malloc(20);
+                    strcpy(new_page->url,url);
+                    curr->next = new_page;
+                    new_page->next = NULL;
+                    new_page->visited = -1;
+                    for (int i = 0; i < MAXLINKS; i++) {
+                        new_page->links[i] = NULL;
+                    }
+                    new_page = web;
+                    break;
+                }
+                prev = curr;
+                curr=curr->next;
+            }
+            else {
+                new_page->url = (char*) malloc(20);
+                strcpy(new_page->url,url);
+                new_page->next = curr;
+                if (prev != NULL) {
+                    prev->next = new_page;
+                }
+                new_page->visited = -1;
+                for (int i = 0; i < MAXLINKS; i++) {
+                    new_page->links[i] = NULL;
+                }
+                if (strcmp(curr->url,web->url) > 0) {
+                    new_page = web;
+                }
+                break;
+            }
+        }
+    }
+    
+    return new_page;
+}
+
+void reset_visited (page *web) {
+    page *curr = web;
+    while(curr != NULL) {
+        curr->visited = 0;
+        curr = curr->next;
+    }
+}
+
+page *find_page (page *web, char *url) {
+    page *curr = web;
+    page *find = NULL;
+    while (curr != NULL) {
+        if (strcmp(curr->url, url) == 0) {
+           find = curr;
+           break;
+        }
+        curr = curr->next;
+    }
+    return find;
+}
+
+void add_link(page *web, char *source_url, char *dest_url) {
+    page *curr = web;
+    while (curr != NULL) {
+        if(curr->url == source_url) {
+            for(int i = 0; i < MAXLINKS; i++) {
+                if (curr->links[i] == NULL) {
+                    curr->links[i] = find_page(web, dest_url);
+                    printf(" %s", curr->links[i]->url);
+                    break;
+                }
+            }
+        }
+        curr = curr->next;
+    }
+}
+
+void print_web (page *web) {
+    page *curr = web;
+    while(curr != NULL) {
+        printf("{URL=\"%s\",visited=%d} -> ",curr->url,curr->visited);
+        for (int i = 0; i < MAXLINKS; i++) {
+            if(curr->links[i] != NULL) {
+                page *link = curr->links[i];
+                printf("%s ", link->url);
+            }
+        }
+        printf("\n");
+        curr = curr->next;
+    }
+}
+
+int main(void) {
+    char cmd;
+    cmd = 'q';
+    char *url;
+    char *des;
+    url = (char*) malloc(sizeof(char)*20);
+    des = (char*) malloc(sizeof(char)*20);
+    page *web = NULL;
+    do {
+        printf("Command? ");
+        scanf(" %c", &cmd);
+        switch(cmd) {
+            case 'p':
+                printf("Page URL? ");
+                scanf(" %s", url);
+                web = add_page(web, url);
+                
+                break;
+            
+            case 'w':
+                print_web(web);
+                break;
+            
+            case 'v':
+                reset_visited(web);
+                break;
+            
+            case 'f':
+                printf("Page URL? ");
+                scanf(" %s", url);
+                page *find = find_page(web, url);
+                if (find == NULL) {
+                    printf("URL \"%s\" is not on the web\n", url);
+                }
+                else {
+                    printf("URL \"%s\" is on the web\n", url);
+                }
+                break;
+            
+            case 'l':
+                printf("Source & destination URL? ");
+                scanf(" %s %s", url, des);
+                if (url == des) {
+                    printf("Source and detination URL cannot be the same");
+                }
+                else {
+                    add_link(web, url, des);
+                }
+                break;
+            
+            case 'q':
+                printf("Bye!\n");
+                break;
+            default:
+                printf("Invalid command '%c'\n", cmd);
+        }
+    } while (cmd != 'q');
+}
